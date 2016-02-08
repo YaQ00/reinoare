@@ -1,0 +1,35 @@
+;$V2000G1000S960,540L10000
+*define
+;一行目、『G1000』以外の数値は変更可
+;（グローバル変数を1000以降に設定して頂ければＯＫ）
+
+caption "例のアレv0.001"
+resetmenu
+insertmenu "終了",END
+insertmenu "バージョン情報",VERSION
+insertmenu "選択肢まで既読スキップ",SKIP
+insertmenu "オートモード",AUTO
+
+versionstr "NScripterサンプルスクリプトＡ","version 2.01  (c)Tears Lab."
+
+exec_dll "dll\szpd.dll/mkdir savedata" ;savedataフォルダを自動生成
+savedir "savedata" ;セーブデータはこの中へ。envdataは外に出てくる
+
+humanz 100
+windowback
+effectcut
+mode_wave_demo
+addkinsoku "”】","【“"
+usewheel
+useescspc
+
+textgosub *text_lb
+pretextgosub *name
+
+maxkaisoupage 100 ;任意の数字を
+kidokuskip ;既読スキップオン
+
+globalon
+clickstr "」。！？",2 ;改行したくない場合は直前に半角アンダーライン_　改ページしたい場合は直後に\
+
+game

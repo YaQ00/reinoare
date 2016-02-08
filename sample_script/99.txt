@@ -1,0 +1,703 @@
+;---------ウィンドウ非表示----------
+*windowoff
+vsp 33,0:vsp 34,0:vsp 35,0:vsp 0,0 ;閉じるボタン、名前文字列、名前ウィンドウ、カーソル画像非表示
+for %9=36 to %18+2 ;選択肢ウィンドウ＆文字列非表示
+ vsp %9,0
+next
+print 1
+textoff ;テキストウィンドウ非表示
+
+lrclick ;左右クリックで再表示
+
+texton
+vsp 33,1:vsp 34,1:vsp 35,1:vsp 0,1
+for %9=36 to %18+2
+ vsp %9,1
+next
+print 1
+
+return
+;---------名前表示------------------
+*name
+gettag $3  ;[]の値（名前）を取得 
+lsp 34,":s/24,24,0;#ffffff"+$3,45,381  ;名前の表示文字幅24,高さ24,字間0
+print 1
+return
+;------------------システムカスタマイズ------------------
+*text_lb
+    texton
+    erasetextwindow 0
+    ispage %0
+    if %0==0 && %1002==1 goto *text_end ;ページ末まで一気に表示機能ONの場合飛ぶ
+    isskip %1
+    btndef clear
+    getpage
+    spbtn 33,3 ;閉じるボタン定義
+    if %0=0 goto *curP ;改行待ち処理へ飛ぶ
+    getcursorpos %0,%2 ;改ページ待ち処理
+    if %1=2 lsp 0,":a;image\menu\cursor2.png",%0,%2 ;オートモードのカーソル
+    if %1=0 lsp 0,":a/6,150,2;image\menu\cursor1.png",%0,%2 ;通常の改ページ待ちカーソル
+    goto *tb_loop
+  *curP ;改行待ち処理
+    getcursorpos %0,%2
+    if %1=2 lsp 0,":a;image\menu\cursor2.png",%0,%2 ;オートモードのカーソル
+    if %1=0 lsp 0,":a/6,150,2;image\menu\cursor0.png",%0,%2;通常の改行待ちカーソル
+  *tb_loop
+    getskipoff
+    textbtnwait %0
+    if %0=  3 gosub *windowoff:goto *text_lb ;閉じるボタンクリック
+    if %0==0 | %0==-3 | %0==-13 goto *text_end ; 普通のクリック・↓ホイール・PageDownキーで読み進む
+    if %0==-1 | %0==-10 gosub *menu:goto *text_lb ;右クリック・Escキーで右クリックメニューへ
+    if %0==-2 | %0==-12 gosub *past:goto *text_lb ;↑ホイール・PageUpキーでバックログへ
+    if %0=-60 goto *text_lb               ; スキップオフ
+    if %0=-61 goto *text_lb               ; オートモードオフ
+goto *tb_loop
+
+*text_end
+    ispage %0  ;改ページなら1、ただのクリック（改行）なら0を返す
+    if %0==1 mov %10,1 ;一度でも改ページすればチェックオン（※バックログで使用）
+    csp 0
+    print 1
+    nextcsel %1 
+    if %1==1 texec2 ;次の行が選択肢ならその時点で表示されているテキストを消さない
+    if %1==0 texec
+    if %0==1 && %1==0 csp 34 ;改ページかつ次が選択肢でない場合名前文字列消去
+    saveon
+return
+
+;--------------------履歴表示----------------------
+*past
+    if %10==0 return ;一度も改ページしていない場合何もしない
+    lsph 1,":a/2;image\menu\uocur.png",760,410
+    lsph 2,":a/2;image\menu\docur.png",760,565
+    vsp 34,0 ;名前タグ文字列非表示
+    vsp 0,0 ;クリック待ちカーソル非表示
+    print 1
+    texthide ;テキスト非表示
+    mov %11,1
+    *past_check
+      checkpage %12,%11 ;（%11）ページ前の回想文字列を取得可能か調べる
+      if %12==0 goto *past_return ;不可能ならリターン
+      getlog $10,%11 ;（%11）ページ前の回想文字列取得
+      gettaglog $11,%11 ;（%11）ページ前の回想名前タグ文字列取得
+
+      strsp 6,$10,40,440,30,4,24,24,0,3,0,1,#0073a8 ;回想文字列表示
+      strsp 7,$11,45,381,10,1,24,24,0,0,0,1,#0073a8 ;回想名前タグ文字列表示
+
+      checkpage %12,%11+1 ;１ページ前の回想文字列を取得可能か
+      checkpage %13,%11+2 ;２ページ前
+      getlog $13,1 ;現在表示している回想文字列の１ページ前を取得
+      bclear
+      if %12==1 vsp 1,1:print 1:bsp 1 ;１ページ前を取得可能なら▲ボタン表示
+      if %13==0 vsp 1,0:print 1 ;２ページ前を取得不可能なら▲ボタン非表示
+      if $10!=$13 vsp 2,1:print 1:bsp 2 ;（%12）ページ前と１ページ前が違う内容なら▼ボタン表示
+      if $10==$13 vsp 2,0:print 1 ;同じなら▼ボタン非表示
+
+      bexec $12
+      
+      if $12=="S1" goto *past_up ;▲ボタン押下
+      if $12=="WHEELUP" goto *past_up ;↑スクロール
+      if $12=="PAGEUP" wait 100:goto *past_up ;PageUpキー（wait連続押下回避）
+      if $12=="S2" goto *past_down ;▼ボタン押下
+      if $12=="WHEELDOWN" goto *past_down ;↓スクロール
+      if $12=="PAGEDOWN" wait 100:goto *past_down ;PageDownキー（wait連続押下回避）
+      
+    *past_return
+    vsp 34,1
+    csp 1:csp 2
+    csp 6:csp 7
+    print 1
+    textshow
+    wait 200
+return
+
+    *past_up
+    add %11,1
+    checkpage %12,%11
+    if %12==0 sub %11,1
+    goto *past_check
+    
+    *past_down
+    sub %11,1
+    if %11==0 goto *past_return
+    goto *past_check
+
+;----------------選択肢カスタマイズ--------------------
+*customsel
+     skipoff
+   *csel_st
+     getcselnum %7 ;選択肢の数を取得
+     if %7<=5 goto *csel_5
+     if %7>=6 goto *csel_6
+;------------------選択肢が５以下-----------------     
+     *csel_5
+       mov %17,4 ;選択肢文字列の格納場所は$4～
+       mov %18,36 ;スプライト番号は36番～
+       mov %19,104 ;一つ目の選択肢の文字列ｘ座標
+       mov %20,100 ;一つ目の選択肢ウィンドウｘ座標
+       for %9=0 to %7-1
+        getcselstr $%17,%9
+        lsp %18,":s/23,23,0;#ffffff#194b9a"+$%17,170,%19 ;選択肢文字列表示
+        lsp %18+1,":a;image\selwindow.png",150,%20 ;選択肢ウィンドウ表示
+        add %17,1
+        add %18,2
+	add %19,50
+	add %20,50
+       next
+       print 1
+     *csel_loop5
+       bclear
+       mov %18,36
+       for %9=0 to %7-1
+        bsp %18
+	add %18,2
+       next
+       sub %18,2
+       bsp 33
+       
+       bexec $8,%8
+     
+       if $8=="WHEELUP" gosub *past:goto *csel_loop5  ;↑ホイールはバックログ
+       if $8=="RCLICK" gosub *menu:goto *csel_loop5  ;右クリックはメニュー
+       if $8=="PAGEUP" wait 100:gosub *past:goto *csel_loop5 ;PageUpキーもバックログ（wait連続押下回避）
+       if $8=="RCLICK" | $8=="ESC" wait 200:gosub *menu:goto *csel_loop5  ;右クリック・Escキーはメニュー（wait連続押下回避）
+
+       if %8>=36 & %8<=%18 saveon:sub %8,36:div %8,2:goto *csel_go5 
+       if %8==33 gosub *windowoff:goto *csel_loop5
+     goto *csel_loop5
+
+*csel_go5
+for %9=36 to %18+1 ;選択肢ウィンドウ＆文字列消去
+ csp %9
+next
+csp 34 ;名前文字列消去
+print 1
+cselgoto %8
+;------------------選択肢が６以上----------------- 
+     *csel_6
+       mov %21,%7/5
+       mov %22,%7 mod 5
+       mov %23,1
+       mov %9,0
+       *csel_6_2
+       mov %17,4 ;選択肢文字列の格納場所は$4～
+       mov %18,36 ;スプライト番号は36番～
+       mov %19,104 ;一つ目の選択肢の文字列ｘ座標
+       mov %20,100 ;一つ目の選択肢ウィンドウｘ座標
+       for %9=%9 to %9+4
+	getcselstr $%17,%9
+        if $%17=="" break
+	lsp %18,":s/23,23,0;#ffffff#194b9a"+$%17,170,%19 ;選択肢文字列表示
+        lsp %18+1,":a;image\selwindow.png",150,%20 ;選択肢ウィンドウ表示
+        add %17,1
+        add %18,2
+	add %19,50
+	add %20,50
+       next
+       if %23<%21 lsp %18,":s/23,23,0;#ffffff#194b9a"+"→次へ",550,%19
+       if %23==%21 && %22>=1 lsp %18,":s/23,23,0;#ffffff#194b9a"+"→次へ",550,%19
+       if %23!=1 && %23<=%21 lsp %18+1,":s/23,23,0;#ffffff#194b9a"+"←前へ",170,%19
+       if %23==%21+1 && %22>=1 lsp %18+1,":s/23,23,0;#ffffff#194b9a"+"←前へ",170,%19
+       lsp %18+2,":a;image\selwindow.png",150,%20
+       print 1
+     *csel_loop6
+       bclear
+       mov %25,36
+       for %6=0 to 4
+        bsp %25
+	add %25,2
+       next
+       bsp %18
+       bsp %18+1
+       bsp 33
+       
+       bexec $8,%8
+     
+       if $8=="WHEELUP" gosub *past:goto *csel_loop6  ;↑ホイールはバックログ
+       if $8=="PAGEUP" wait 100:gosub *past:goto *csel_loop5 ;PageUpキーもバックログ（wait連続押下回避）
+       if $8=="RCLICK" | $8=="ESC" wait 200:gosub *menu:goto *csel_loop6  ;右クリック・ESCキーはメニュー（wait連続押下回避）
+
+       if %8==%18 gosub *csel_clear:add %23,1:goto *csel_6_2 ;「→次へ」
+       if %8==%18+1 gosub *csel_clear:gosub *csel_cal:goto *csel_6_2 ;「←前へ」
+       if %8>=36 && %8<=%18-2 saveon:sub %8,36:div %8,2:sub %23,1:mul %23,5:add %8,%23:goto *csel_go6 
+       if %8==33 gosub *windowoff:goto *csel_loop6
+goto *csel_loop6
+
+*csel_clear
+for %6=36 to %18+2
+ csp %6
+next
+print 1
+return
+*csel_cal
+if %23==%21+1 && %22!=0 sub %9,%22+5:sub %23,1:return
+sub %9,10
+sub %23,1
+return
+*csel_go6
+for %6=36 to %18+2 ;選択肢ウィンドウ＆文字列消去
+ csp %6
+next
+csp 34 ;名前文字列消去
+print 1
+cselgoto %8
+
+;------------右クリックメニュー----------------
+*menu
+deletescreenshot
+getscreenshot 144,108
+*menuset
+    bclear
+    btrans
+    lsp 0,":a;image\menu\msave1.png",  670, 70 ;セーブ
+    lsp 1,":a;image\menu\msave2.png",  670, 70
+    lsp 2,":a;image\menu\mload1.png",  670,115 ;ロード
+    lsp 3,":a;image\menu\mload2.png",  670,115
+    lsp 4,":a;image\menu\mconfig1.png",670,160 ;コンフィグ
+    lsp 5,":a;image\menu\mconfig2.png",670,160
+    lsp 6,":a;image\menu\past1.png",   670,220 ;履歴表示
+    lsp 7,":a;image\menu\past2.png",   670,220
+    lsp 8,":a;image\menu\auto1.png",   670,265 ;オートモード
+    lsp 9,":a;image\menu\auto2.png",   670,265
+    lsp 10,":a;image\menu\skip1.png",  670,310 ;選択肢まで既読スキップ
+    lsp 11,":a;image\menu\skip2.png",  670,310
+    lsp 12,":a;image\menu\mtitle1.png",670,370 ;リセット
+    lsp 13,":a;image\menu\mtitle2.png",670,370
+    lsp 14,":a;image\menu\mend1.png",  670,415 ;終了
+    lsp 15,":a;image\menu\mend2.png",  670,415
+    lsp 16,":a;image\menu\mback1.png", 670,480 ;戻る
+    lsp 17,":a;image\menu\mback2.png", 670,480
+    lsp 18,":a;image\menu\menu.png",0,0     ;メニュー画面の背景
+    print 1
+    
+    bsp 0,"P0C1","P1C0",""
+    bsp 2,"P2C3","P3C2",""
+    bsp 4,"P4C5","P5C4",""
+    bsp 6,"P6C7","P7C6",""
+    bsp 8,"P8C9","P9C8",""
+    bsp 10,"P10C11","P11C10",""
+    bsp 12,"P12C13","P13C12",""
+    bsp 14,"P14C15","P15C14",""
+    bsp 16,"P16C17","P17C16",""
+  *menu_loop
+    bexec $0,%0
+    if $0="WHEELUP" | $0="WHEELDOWN" goto *menu_loop
+    if $0="LCLICK" | $0="MCLICK" | $0="CTRL" goto *menu_loop
+    if %0=12 gosub *resetdal:goto *menuset
+    if %0=14 gosub *enddal:goto *menuset
+    for %1=0 to 18
+        csp %1
+    next
+    if %0=0 gosub *saveset:goto *menuset
+    if %0=2 gosub *loadset:goto *menuset
+    if %0=4 gosub *config:goto *menuset
+    print 1
+    if %0=6 deletescreenshot:goto *past
+    if %0=8 deletescreenshot:systemcall automode:wait 100:return
+    if %0=10 deletescreenshot:systemcall skip:return
+    deletescreenshot
+    dwave 10,"sound\finger_snap.wav" ;メニューから抜ける時の効果音
+    wait 200
+return
+
+*resetdal
+    okcancelbox %0,"タイトルへ戻りますか？","リセット確認"
+    if %0=0 return
+mov %1009,1
+reset
+
+*enddal
+    okcancelbox %0,"終了しますか？","終了確認"
+    if %0=0 return
+mov %1009,0
+end
+
+;------------------セーブ画面------------------
+*saveset
+    bclear
+    if %1011=0 mov %1011,1
+    mov %0,(%1011-1)/12
+    if %0==0 lsp 0,":a;image\menu\save1_3.png",670,70
+    if %0!=0 lsp 0,":a;image\menu\save1_1.png",670,70:lsp 1,":a;image\menu\save1_2.png",670,70:bsp 0,"P0C1","P1C0",""
+    if %0==1 lsp 2,":a;image\menu\save2_3.png",670,115
+    if %0!=1 lsp 2,":a;image\menu\save2_1.png",670,115:lsp 3,":a;image\menu\save2_2.png",670,115:bsp 2,"P2C3","P3C2",""
+    if %0==2 lsp 4,":a;image\menu\save3_3.png",670,160
+    if %0!=2 lsp 4,":a;image\menu\save3_1.png",670,160:lsp 5,":a;image\menu\save3_2.png",670,160:bsp 4,"P4C5","P5C4",""
+    if %0==3 lsp 6,":a;image\menu\save4_3.png",670,205
+    if %0!=3 lsp 6,":a;image\menu\save4_1.png",670,205:lsp 7,":a;image\menu\save4_2.png",670,205:bsp 6,"P6C7","P7C6",""
+    if %0==4 lsp 8,":a;image\menu\save5_3.png",670,250
+    if %0!=4 lsp 8,":a;image\menu\save5_1.png",670,250:lsp 9,":a;image\menu\save5_2.png",670,250:bsp 8,"P8C9","P9C8",""
+    if %0==5 lsp 10,":a;image\menu\save6_3.png",670,295
+    if %0!=5 lsp 10,":a;image\menu\save6_1.png",670,295:lsp 11,":a;image\menu\save6_2.png",670,295:bsp 10,"P10C11","P11C10",""
+    lsp 12,":a;image\menu\mback1.png",670,480
+    lsp 13,":a;image\menu\mback2.png",670,480
+    bsp 12,"P12C13","P13C12",""
+    lsp 14,":a;image\menu\msave1.png",500,530
+    lsp 15,":a;image\menu\msave2.png",500,530
+    bsp 14,"P14C15","P15C14",""
+    mov %1,%0*12
+    for %2=1 to 12
+        mov %3,%1+%2
+        itoa $0,%3
+        mov $1,"savedata\save"+$0+".jpg"
+        fileexist %0,$1
+        mov %3,(%2-1) mod 4
+        mov %3,%3*152+25
+        mov %4,(%2-1)/4
+        mov %4,%4*116+80
+        if  %1011=%1+%2 lsp 29,":c;image\menu\blue.jpg",%3-3,%4-3
+        if %0=1 lsp %2+15,":c;"+$1,%3,%4
+        if %0=0 lsp %2+15,":c;image\menu\nodata.jpg",%3,%4
+        bsp %2+15
+    next
+    gosub *sadispdata
+    lsp 32,":a;image\menu\savemenu.png",0,0
+    print 1
+  *save_loop
+    bexec $0,%0
+    if $0="WHEELUP" | $0="WHEELDOWN" goto *save_loop
+    if $0="LCLICK" | $0="MCLICK" | $0="CTRL" goto *save_loop
+    if %0=0 mov %1011, 1:goto *saveset
+    if %0=2 mov %1011,13:goto *saveset
+    if %0=4 mov %1011,25:goto *saveset
+    if %0=6 mov %1011,37:goto *saveset
+    if %0=8 mov %1011,49:goto *saveset
+    if %0=10 mov %1011,61:goto *saveset
+    if %0=14 goto *dosave
+    if %0>15 goto *samove
+    for %0=0 to 32
+        csp %0
+    next
+    dwave 10,"sound\finger_snap.wav" ;セーブ画面から抜ける時の効果音
+    wait 200
+return
+
+*dosave
+    itoa $0,%1011
+    mov $0,"savedata\save"+$0+".jpg"
+    savescreenshot2 $0
+    if $3!="" mov $1,$3:mov $1,$1+"：":gettext $2:add $1,$2:goto *saveskip
+    gettext $1
+    *saveskip
+    len %14,$1
+    if %14>=39 mid $1,$1,0,36:mov $1,$1+"…" ;39文字以上なら、36文字取り出して"…"を追加して代入
+    savegame2 %1011,$1
+    dwave 10,"sound\finger_snap.wav" ;セーブしましたよ！の効果音
+    for %0=15 to 32
+        csp %0
+    next
+goto *saveset
+
+*samove
+    mov %0,%0-15
+    mov %1,(%1011-1)/12
+    mov %1011,%1*12+%0
+    mov %1,(%0-1) mod 4
+    mov %1,%1*152+22
+    mov %2,(%0-1)/4
+    mov %2,%2*116+77
+    amsp 29,%1,%2,255
+    gosub *sadispdata
+    print 1    
+goto *save_loop
+
+*sadispdata
+    itoa2 $0,%1011
+    mov $0,"Ｎｏ．"+$0
+    csp 30
+    lsp 30,":s/16,16,0;#FFFFFF$0",197,450
+    itoa $0,%1011
+    mov $0,"savedata\save"+$0+".jpg"
+    fileexist %0,$0
+    if %0=1 lsp 28,":c;"+$0,27,456
+    if %0=0 lsp 28,":c;image\menu\nodata.jpg",27,456
+    savetime %1011,%0,%1,%2,%3
+    if %0=0 mov $0,"－月－日　－時－分\－－－－－－－－－－－－－"
+    notif %0=0 gosub *sagetdata
+    strsp 31,$0,287,477,100,2,16,16,0,11,0,0,#FFFFFF
+return
+
+*sagetdata
+    itoa2 $0,%0
+    itoa2 $1,%1
+    mov $0,$0+"月"+$1+"日　"
+    itoa2 $1,%2
+    mov $0,$0+$1+"時"
+    itoa2 $1,%3
+    mov $0,$0+$1+"分\"
+    getsavestr $1,%1011
+    mov $0,$0+$1
+return
+
+
+;------------------ロード画面------------------
+*loadset
+    bclear
+    if %1011=0 mov %1011,1
+    mov %0,(%1011-1)/12
+    if %0==0 lsp 0,":a;image\menu\save1_3.png",670,70
+    if %0!=0 lsp 0,":a;image\menu\save1_1.png",670,70:lsp 1,":a;image\menu\save1_2.png",670,70:bsp 0,"P0C1","P1C0",""
+    if %0==1 lsp 2,":a;image\menu\save2_3.png",670,115
+    if %0!=1 lsp 2,":a;image\menu\save2_1.png",670,115:lsp 3,":a;image\menu\save2_2.png",670,115:bsp 2,"P2C3","P3C2",""
+    if %0==2 lsp 4,":a;image\menu\save3_3.png",670,160
+    if %0!=2 lsp 4,":a;image\menu\save3_1.png",670,160:lsp 5,":a;image\menu\save3_2.png",670,160:bsp 4,"P4C5","P5C4",""
+    if %0==3 lsp 6,":a;image\menu\save4_3.png",670,205
+    if %0!=3 lsp 6,":a;image\menu\save4_1.png",670,205:lsp 7,":a;image\menu\save4_2.png",670,205:bsp 6,"P6C7","P7C6",""
+    if %0==4 lsp 8,":a;image\menu\save5_3.png",670,250
+    if %0!=4 lsp 8,":a;image\menu\save5_1.png",670,250:lsp 9,":a;image\menu\save5_2.png",670,250:bsp 8,"P8C9","P9C8",""
+    if %0==5 lsp 10,":a;image\menu\save6_3.png",670,295
+    if %0!=5 lsp 10,":a;image\menu\save6_1.png",670,295:lsp 11,":a;image\menu\save6_2.png",670,295:bsp 10,"P10C11","P11C10",""
+    lsp 12,":a;image\menu\mback1.png",670,480
+    lsp 13,":a;image\menu\mback2.png",670,480
+    bsp 12,"P12C13","P13C12",""
+    lsp 14,":a;image\menu\mload1.png",500,530
+    lsp 15,":a;image\menu\mload2.png",500,530
+    bsp 14,"P14C15","P15C14",""
+    mov %1,%0*12
+    for %2=1 to 12
+        mov %3,%1+%2
+        itoa $0,%3
+        mov $1,"savedata\save"+$0+".jpg"
+        fileexist %0,$1
+        mov %3,(%2-1) mod 4
+        mov %3,%3*152+25
+        mov %4,(%2-1)/4
+        mov %4,%4*116+80
+        if  %1011=%1+%2 lsp 29,":c;image\menu\blue.jpg",%3-3,%4-3
+        if %0=1 lsp %2+15,":c;"+$1,%3,%4
+        if %0=0 lsp %2+15,":c;image\menu\nodata.jpg",%3,%4
+        bsp %2+15
+    next
+    gosub *sadispdata
+    lsp 32,":a;image\menu\loadmenu.png",0,0
+    print 1
+  *load_loop
+    bexec $0,%0
+    if $0="WHEELUP" | $0="WHEELDOWN" goto *load_loop
+    if $0="LCLICK" | $0="MCLICK" | $0="CTRL" goto *load_loop
+    if %0=0 mov %1011, 1:goto *loadset
+    if %0=2 mov %1011,13:goto *loadset
+    if %0=4 mov %1011,25:goto *loadset
+    if %0=6 mov %1011,37:goto *loadset
+    if %0=8 mov %1011,49:goto *loadset
+    if %0=10 mov %1011,61:goto *loadset
+    if %0=14 goto *doload
+    if %0>15 goto *lomove
+    for %0=0 to 32
+        csp %0
+    next
+    dwave 10,"sound\finger_snap.wav" ;ロード画面から抜ける時の効果音
+    wait 200
+return
+
+*doload
+    lookbackflush
+    dwave 10,"sound\finger_snap.wav" ;ロードしますよ！の効果音
+    delay 1300 ;効果音の長さに応じて変更
+    loadgame %1011
+goto *loadset
+
+*lomove
+    mov %0,%0-15
+    mov %1,(%1011-1)/12
+    mov %1011,%1*12+%0
+    mov %1,(%0-1) mod 4
+    mov %1,%1*152+22
+    mov %2,(%0-1)/4
+    mov %2,%2*116+77
+    amsp 29,%1,%2,255
+    gosub *sadispdata
+    print 1    
+goto *load_loop
+
+;---------------コンフィグ！--------------------------
+*config
+    bclear
+    isfull %1 ;1ならフルスクリーン
+
+    lsp 23,":a;image\configback.png",0,0 ;背景設定（config.pngと合せて一つの画像にしても可。無くても可。）
+    lsp 22,":a;image\config.png",0,0
+    lsp 0,":a;image\menu\syoki1.png",400,30 ;初期設定ボタン
+    lsp 1,":a;image\menu\syoki2.png",400,30
+    lsp 2,":a;image\menu\back1.png",600,30 ;戻るボタン
+    lsp 3,":a;image\menu\back2.png",600,30
+
+    lsp 4,":a/2;image\menu\dial.png",%1001,190 ;通常文章表示スピード
+    itoa $0,%1001-74
+    lsp 12,":c;>"+$0+",8,#191970",75,198
+    itoa2 $1,%1000
+    lsp 18,":s/14,14,0;#FFFFFF"+$1,85,220
+    lsp 5,":a/2;image\menu\dial.png",%1004,190 ;オートモード文章表示スピード
+    itoa $0,%1004-484
+    lsp 13,":c;>"+$0+",8,#191970",485,198
+    itoa2 $1,%1003
+    lsp 19,":s/14,14,0;#FFFFFF"+$1,495,220
+    lsp 6,":a/2;image\menu\dial.png",%1006,501 ;BGMボリューム
+    itoa $0,%1006-74
+    lsp 14,":c;>"+$0+",8,#191970",75,508
+    itoa2 $1,%1005
+    lsp 20,":s/14,14,0;#FFFFFF"+$1,85,530
+    lsp 7,":a/2;image\menu\dial.png",%1008,501 ;SEボリューム
+    itoa $0,%1008-484
+    lsp 15,":c;>"+$0+",8,#191970",485,508
+    itoa2 $1,%1007
+    lsp 21,":s/14,14,0;#FFFFFF"+$1,495,530
+
+    if %1002==0 csp 8:lsp 9,":a;image\menu\masu.png",150,240 ;ページ末まで一気に
+    if %1002==1 csp 9:lsp 8,":a;image\menu\masure.png",150,240
+        
+    if %1==0 lsp 10,":a;image\menu\marumaru.png",300,340:lsp 11,":a;image\menu\maru.png",500,340 ;画面サイズ設定
+    if %1==1 lsp 10,":a;image\menu\maru.png",300,340:lsp 11,":a;image\menu\marumaru.png",500,340 
+        
+    print 1
+    
+    bsp 0,"P0C1","P1C0","P0C1"
+    bsp 2,"P2C3","P3C2",""
+    bsp 4:bsp 5:bsp 6:bsp 7
+    bsp 8:bsp 9
+    bsp 10:bsp 11
+    bdown ;ボタンの連続押下を可能に（ダイヤルをドラッグするため）
+  *con_loop
+    bexec $8,%8
+    
+    if $8=="LCLICK" goto *speed ;どのボタンでもないところをクリックで*speedへ
+    if %8==4 goto *speed
+    if %8==5 goto *autospeed
+    if %8==6 goto *bgmvol
+    if %8==7 goto *sevol 
+    if %8==8 mov %1002,0:wait 200:goto *config ;bdown命令を使用しているため、押下不可能な時間を挟む（連続押下回避）
+    if %8==9 mov %1002,1:wait 200:goto *config
+    if %8==10 && %1==1 menu_window:goto *config
+    if %8==11 && %1==0 menu_full:goto *config
+    if %8==0 dwave 10,"sound\finger_snap.wav":wait 500:gosub *configset1st:goto *config ;初期値に戻したよ！の効果音
+    if %8==2 | $8=="RCLICK" | $8=="ESC" wait 500:goto *conreturn ;右クリック・ESCキーでも戻る
+goto *con_loop
+
+;----------文章表示スピード設定-----------------------
+*speed
+    getmousepos %2,%3
+    if %8==4 goto *sp ;ダイヤルクリックで来た場合処理を飛ばす
+    if %2<75 | %2>307 goto *autospeed
+    if %3<198 | %3>206 goto *autospeed
+    *sp
+    wait 1
+    isdown %2
+    if %2==0 goto *config ;ドラッグをやめたら*configへ
+    getmousepos %2,%3
+    if %2<86 mov %2,86
+    if %2>296 mov %2,296
+    mov %1000,%2-86
+    mul %1000,48
+    div %1000,100 ;0～100まで調節可能
+    mov %1001,%2-11 ;ｘ座標をグローバル変数へ記録（ダイヤル画像が22×22pxのため-11）
+    itoa $0,%1001-74
+    lsp 12,":c;>"+$0+",8,#191970",75,198
+    amsp 4,%1001,190,255
+    itoa2 $1,%1000
+    lsp 18,":s/14,14,0;#FFFFFF"+$1,85,220
+    print 1
+    textspeed %1000
+goto *speed
+
+;----------オートモードスピード設定-------------------
+*autospeed
+    getmousepos %2,%3
+    if %8==5 goto *au
+    if %2<485 | %2>717 goto *bgmvol
+    if %3<196 | %3>206 goto *bgmvol
+    *au 
+    wait 1
+    isdown %2
+    if %2==0 goto *config
+    getmousepos %2,%3  
+    if %2<496 mov %2,496
+    if %2>706 mov %2,706
+    mov %1003,%2-496
+    mul %1003,10 ;0～2100まで調節可能
+    mov %1004,%2-11
+    itoa $0,%1004-484
+    lsp 13,":c;>"+$0+",8,#191970",485,198
+    amsp 5,%1004,190,255
+    itoa2 $1,%1003
+    lsp 19,":s/14,14,0;#FFFFFF"+$1,495,220
+    print 1
+    automode_time %1003
+goto *autospeed
+
+;----------ＢＧＭボリューム設定-----------------------
+*bgmvol
+    getmousepos %2,%3
+    if %8==6 goto *bgm
+    if %2<75 | %2>307 goto *sevol
+    if %3<508 | %3>516 goto *sevol
+    *bgm
+    wait 1
+    isdown %2
+    if %2==0 goto *config
+    getmousepos %2,%3
+    if %2<86 mov %2,86
+    if %2>296 mov %2,296
+    mov %1005,%2-86
+    mul %1005,48
+    div %1005,100
+    mov %1006,%2-11
+    itoa $0,%1006-74
+    lsp 14,":c;>"+$0+",8,#191970",75,508
+    amsp 6,%1006,501,255
+    itoa2 $1,%1005
+    lsp 20,":s/14,14,0;#FFFFFF"+$1,85,530
+    print 1
+    bgmvol %1005
+goto *bgmvol
+
+;----------ＳＥボリューム設定-----------------------
+*sevol
+    getmousepos %2,%3
+    if %8==7 goto *se
+    if %2<485 | %2>717 goto *config
+    if %3<508 | %3>516 goto *config
+    *se
+    wait 1
+    isdown %2
+    if %2==0 dwave 10,"sound\finger_snap.wav":goto *config ;ダイヤルを動かす度に効果音を鳴らす
+    getmousepos %2,%3
+    if %2<496 mov %2,496
+    if %2>706 mov %2,706
+    mov %1007,%2-496
+    mul %1007,48
+    div %1007,100
+    mov %1008,%2-11
+    itoa $0,%1008-484
+    lsp 15,":c;>"+$0+",8,#2a83a2",486,508
+    amsp 7,%1008,501,255
+    itoa2 $1,%1007
+    lsp 21,":s/14,14,0;#FFFFFF"+$1,495,530
+    print 1
+    sevol %1007
+goto *sevol
+
+;----------コンフィグ画面から戻る------------------
+*conreturn
+    dwave 10,"sound\finger_snap.wav" ;コンフィグ画面から抜ける時の効果音
+      for %0=0 to 23
+          csp %0
+      next   
+return
+
+;----------初回＆デフォルトの設定-----------------------
+*configset1st
+    mov %1000,25 ;通常文章表示スピードを25に
+    mov %1001,180 ;通常文章表示スピードのｘ座標
+    mov %1002,0 ;ページ末まで一気に表示しない
+    mov %1003,1050 ;オートモード表示スピードを1050に
+    mov %1004,590 ;オートモード表示スピードのｘ座標
+    mov %1005,100 ;BGMボリュームを100（最大）に
+    mov %1006,285 ;BGMボリュームのｘ座標（最大）
+    mov %1007,100 ;SEボリュームを100（最大）に
+    mov %1008,695 ;SEボリュームのｘ座標（最大）
+    textspeed %1000
+    automode_time %1003
+    bgmvol %1005
+    sevol %1007
+    mov %1009,1 ;初回時の判断のための変数
+return
