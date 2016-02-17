@@ -10,7 +10,7 @@ setwindow 10,430,40,3,22,24,2,10,20,0,0,#ddddff,0,429,959,539
 !w500
 
 *title
-lsp 01,"start.png",100,100
+lsp 01,"start1.png",100,100
 print 1
 
 !w500
