@@ -1,16 +1,28 @@
 ;$V2000G1000S960,540L10000
-exec_dll "NSFont.dll/message"
 *define
+
+caption "例のアレv0.003"
+resetmenu
+insertmenu "終了",END
+insertmenu "バージョン情報",VERSION
+insertmenu "選択肢まで既読スキップ",SKIP
+insertmenu "オートモード",AUTO
+
+versionstr "NScripterサンプルスクリプトＡ","version 2.01  (c)Tears Lab."
+
+exec_dll "dll\szpd.dll/mkdir savedata" ;savedataフォルダを自動生成
+savedir "savedata" ;セーブデータはこの中へ。envdataは外に出てくる
+
 game
 *start
 bg "Title.jpg",10,1000
 
-setwindow 10,430,40,3,22,24,2,10,20,0,0,#ddddff,0,429,959,539
+setwindow 0,0,40,3,26,29,0,3,20,0,0,#ff0000,0,0,0,0
 
 !w500
 
 *title
-lsp 01,"start1.png",100,100
+lsp 01,"start1.png",700,300
 print 1
 
 !w500

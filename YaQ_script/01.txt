@@ -1,0 +1,45 @@
+*start
+if %1009!=1 gosub *configset1st ;初プレイの場合の各数値初期設定
+
+saveoff
+
+if %1010=1 goto *logojump
+bg "corepic/logotop.png",2
+delay 1400
+bg black,1
+delay 400
+*logojump
+bg "corepic/Title.jpg",2
+
+setwindow 0,0,40,3,20,29,0,3,20,0,0,#ff0000,0,0,0,0
+
+!w500
+
+*title
+lsp 40,":a;corepic\start1.png",760,300
+lsph 41,":a;corepic\start2.png",760,300
+lsp 42,":a;corepic\load1.png",760,360
+lsph 43,":a;corepic\load2.png",760,360
+lsp 44,":a;corepic\config1.png",760,420
+lsph 45,":a;corepic\config2.png",760,420
+lsp 46,":a;corepic\exit1.png",760,480
+lsph 47,":a;corepic\exit2.png",760,480
+print 1
+
+*title_loop
+
+bclear
+
+bsp 40,"P40C41","P41C40","S10,(sound\finger_snap.wav)"
+bsp 42,"P42C43","P43C42","S10,(sound\finger_snap.wav)"
+bsp 44,"P44C45","P45C44","S10,(sound\finger_snap.wav)"
+bsp 46,"P46C47","P47C46",""
+
+bexec $0
+
+if $0=="S40" stop:goto *story_start
+if $0=="S42" gosub *loadset:goto *title
+if $0=="S44" gosub *config:goto *title
+if $0=="S46" gosub *enddal:goto *title
+
+goto *title_loop

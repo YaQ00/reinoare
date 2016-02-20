@@ -1,0 +1,40 @@
+;$V2000G1000S960,540L10000
+*define
+
+;00.txt いろいろ事前の仕込み
+;01.txt タイトル画面
+;02.txt~本文
+;98.txt Retern
+;99.txt コア
+
+
+caption "はにう"
+resetmenu
+insertmenu "終了",END
+insertmenu "バージョン情報",VERSION
+insertmenu "選択肢まで既読スキップ",SKIP
+insertmenu "オートモード",AUTO
+
+versionstr "向日葵は陽炎に舞うv0.003","(c)Team Iron WinG"
+
+exec_dll "dll\szpd.dll/mkdir savedata" ;savedataフォルダを自動生成
+savedir "savedata" ;セーブデータはこの中へ。envdataは外に出てくる
+
+humanz 100
+mode_wave_demo
+usewheel
+useescspc
+kidokuskip
+maxkaisoupage 100
+globalon
+
+addkinsoku "”】","【“"
+
+textgosub *text_lb
+pretextgosub *name
+
+
+effect 2,10,1000
+
+
+game
