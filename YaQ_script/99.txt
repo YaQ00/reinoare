@@ -138,7 +138,7 @@ return
        for %9=0 to %7-1
         getcselstr $%17,%9
         lsp %18,":s/23,23,0;#ffffff#194b9a"+$%17,170,%19 ;選択肢文字列表示
-        lsp %18+1,":a;image\selwindow.png",150,%20 ;選択肢ウィンドウ表示
+        lsp %18+1,":a;corepic\selwindow.png",150,%20 ;選択肢ウィンドウ表示
         add %17,1
         add %18,2
 	add %19,50
@@ -188,7 +188,7 @@ cselgoto %8
 	getcselstr $%17,%9
         if $%17=="" break
 	lsp %18,":s/23,23,0;#ffffff#194b9a"+$%17,170,%19 ;選択肢文字列表示
-        lsp %18+1,":a;image\selwindow.png",150,%20 ;選択肢ウィンドウ表示
+        lsp %18+1,":a;corepic\selwindow.png",150,%20 ;選択肢ウィンドウ表示
         add %17,1
         add %18,2
 	add %19,50
@@ -198,7 +198,7 @@ cselgoto %8
        if %23==%21 && %22>=1 lsp %18,":s/23,23,0;#ffffff#194b9a"+"→次へ",550,%19
        if %23!=1 && %23<=%21 lsp %18+1,":s/23,23,0;#ffffff#194b9a"+"←前へ",170,%19
        if %23==%21+1 && %22>=1 lsp %18+1,":s/23,23,0;#ffffff#194b9a"+"←前へ",170,%19
-       lsp %18+2,":a;image\selwindow.png",150,%20
+       lsp %18+2,":a;corepic\selwindow.png",150,%20
        print 1
      *csel_loop6
        bclear
@@ -515,61 +515,9 @@ goto *load_loop
     bclear
     isfull %1 ;1ならフルスクリーン
 
-    lsp 23,":a;image\configback.png",0,0 ;背景設定（config.pngと合せて一つの画像にしても可。無くても可。）
-    lsp 22,":a;image\config.png",0,0
-    lsp 0,":a;corepic\syoki1.png",400,30 ;初期設定ボタン
-    lsp 1,":a;corepic\syoki2.png",400,30
-    lsp 2,":a;corepic\back1.png",600,30 ;戻るボタン
-    lsp 3,":a;corepic\back2.png",600,30
-
-    lsp 4,":a/2;corepic\dial.png",%1001,190 ;通常文章表示スピード
-    itoa $0,%1001-74
-    lsp 12,":c;>"+$0+",8,#191970",75,198
-    itoa2 $1,%1000
-    lsp 18,":s/14,14,0;#FFFFFF"+$1,85,220
-    lsp 5,":a/2;corepic\dial.png",%1004,190 ;オートモード文章表示スピード
-    itoa $0,%1004-484
-    lsp 13,":c;>"+$0+",8,#191970",485,198
-    itoa2 $1,%1003
-    lsp 19,":s/14,14,0;#FFFFFF"+$1,495,220
-    lsp 6,":a/2;corepic\dial.png",%1006,501 ;BGMボリューム
-    itoa $0,%1006-74
-    lsp 14,":c;>"+$0+",8,#191970",75,508
-    itoa2 $1,%1005
-    lsp 20,":s/14,14,0;#FFFFFF"+$1,85,530
-    lsp 7,":a/2;corepic\dial.png",%1008,501 ;SEボリューム
-    itoa $0,%1008-484
-    lsp 15,":c;>"+$0+",8,#191970",485,508
-    itoa2 $1,%1007
-    lsp 21,":s/14,14,0;#FFFFFF"+$1,495,530
-
-    if %1002==0 csp 8:lsp 9,":a;corepic\masu.png",150,240 ;ページ末まで一気に
-    if %1002==1 csp 9:lsp 8,":a;corepic\masure.png",150,240
-
-    if %1==0 lsp 10,":a;corepic\marumaru.png",300,340:lsp 11,":a;corepic\maru.png",500,340 ;画面サイズ設定
-    if %1==1 lsp 10,":a;corepic\maru.png",300,340:lsp 11,":a;corepic\marumaru.png",500,340
-
-    print 1
-
-    bsp 0,"P0C1","P1C0","P0C1"
-    bsp 2,"P2C3","P3C2",""
-    bsp 4:bsp 5:bsp 6:bsp 7
-    bsp 8:bsp 9
-    bsp 10:bsp 11
-    bdown ;ボタンの連続押下を可能に（ダイヤルをドラッグするため）
-  *con_loop
-    bexec $8,%8
-
-    if $8=="LCLICK" goto *speed ;どのボタンでもないところをクリックで*speedへ
-    if %8==4 goto *speed
-    if %8==5 goto *autospeed
-    if %8==6 goto *bgmvol
-    if %8==7 goto *sevol
-    if %8==8 mov %1002,0:wait 200:goto *config ;bdown命令を使用しているため、押下不可能な時間を挟む（連続押下回避）
-    if %8==9 mov %1002,1:wait 200:goto *config
-    if %8==10 && %1==1 menu_window:goto *config
-    if %8==11 && %1==0 menu_full:goto *config
-    if %8==0 dwave 10,"sound\finger_snap.wav":wait 500:gosub *configset1st:goto *config ;初期値に戻したよ！の効果音
+    lsp 23,":c;corepic\configback.jpg",0,0 ;背景設定（config.pngと合せて一つの画像にしても可。無くても可。）
+    *con_loop
+      bexec $8,%8
     if %8==2 | $8=="RCLICK" | $8=="ESC" wait 500:goto *conreturn ;右クリック・ESCキーでも戻る
 goto *con_loop
 
