@@ -15,7 +15,7 @@ insertmenu "バージョン情報",VERSION
 insertmenu "選択肢まで既読スキップ",SKIP
 insertmenu "オートモード",AUTO
 
-versionstr "向日葵は陽炎に舞うv0.008","(c)Team Iron WinG"
+versionstr "向日葵は陽炎に舞うv0.09","(c)Team Iron WinG"
 
 exec_dll "dll\szpd.dll/mkdir savedata" ;savedataフォルダを自動生成
 savedir "savedata" ;セーブデータはこの中へ。envdataは外に出てくる
